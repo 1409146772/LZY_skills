@@ -1,0 +1,23 @@
+# config.conf.example — 模板(随仓提交)。复制为 config.conf 并按本机环境修改。
+# config.conf 已被 .gitignore 忽略,不随仓提交。
+# 文件过滤方法论已内置在 skill 的 references/file-filter-methodology.md,无需外部路径。
+# 报告目录已废弃独立配置:统一报告路径规则见 SKILL.md「统一报告文件」
+# (git 仓库内 → <项目根>/.claude-md-map/output/OutPut_YYYYMMDD.html;仓库外 → skill 自带 output/)。
+
+# ---- 运行结果邮件通知 ----
+# notify_email: 收件人邮箱(必填才发;留空/缺省 = 不发邮件,静默跳过)
+# notify_cc:    抄送邮箱,多个用英文逗号分隔(可留空)
+# 发送方式: 每轮维护跑完自动 --confirm-send 直发(用户已授权),发送失败不阻塞维护流程
+notify_email = <你的飞书邮箱,如 yourname@cviauto.com>
+notify_cc =
+
+# ---- 文档版本信息署名(doc-audit 模式) ----
+# 三项均为可选。留空/缺省 = 不写死任何姓名,按下方缺省行为处理。
+# author:     设计类文档版本历史表的「作者」列
+# reviewer:   设计类文档版本历史表的「审查人」列
+# maintainer: 非设计类文档三行版本信息的「维护者」行
+# 缺省行为:author 留空 → 单元格写 "-";reviewer 留空 → 写「待审查」;
+#          maintainer 留空 → 该行省略(文档已有姓名则保留原样,不删不编)。
+author =
+reviewer =
+maintainer =

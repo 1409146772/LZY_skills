@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<!--
+  claude-md-map 统一报告模板（骨架）
+
+  用法：复制本文件内容，替换各注释占位与示例行；保留 <style> 与 4 对模式锚点注释不动。
+  锚点：MODE 注释对（每模式一对开合锚点），本轮没跑的模式整段删除。
+  约束：单文件、零外部资源；样式只写在此 <style> 内，正文不要逐标签内联 style=。
+  徽章：<span class="badge ok|fail|noop|warn">文字</span>
+        ok=成功(绿) fail=失败(红) noop=未变更(灰) warn=警告(橙)
+  章节顺序固定：①CLAUDE.md 更新 ②文件过滤 ③文档审核 ④记忆更新；NOOP 也保留章节,一句话结论即可。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>claude-md-map 维护报告</title>
+<style>
+:root{
+  --page-bg:#f5f6f8; --card-bg:#fff; --primary:#2f54eb;
+  --text:#1f1f1f; --muted:#666; --faint:#999;
+  --line:#d9d9d9; --head-bg:#e8edff; --card-head-bg:#f0f4ff;
+  --zebra:#fafafa; --code-bg:#f5f5f5;
+  --ok:#52c41a; --fail:#ff4d4f; --noop:#8c8c8c; --warn:#fa8c16;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:24px 16px; background:var(--page-bg); color:var(--text);
+  font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+}
+.wrap{max-width:960px; margin:0 auto}
+.page-title{font-size:20px; font-weight:600; margin:0 0 4px}
+.page-sub{color:var(--muted); font-size:13px; margin:0 0 20px}
+
+/* 章节卡片 */
+.card{background:var(--card-bg); border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,.08);
+      margin:0 0 16px; overflow:hidden}
+.card>h2{margin:0; padding:10px 16px; font-size:15px; font-weight:600;
+         background:var(--card-head-bg); border-left:4px solid var(--primary);
+         display:flex; align-items:center; gap:8px}
+.card-body{padding:14px 16px}
+.card h3{font-size:14px; margin:14px 0 8px}
+.card h3:first-child{margin-top:0}
+
+/* 表格 */
+.tbl{width:100%; border-collapse:collapse; font-size:13px; margin:6px 0}
+.tbl th,.tbl td{border:1px solid var(--line); padding:8px 12px; text-align:left; vertical-align:top}
+.tbl th{background:var(--head-bg); font-weight:600; white-space:nowrap}
+.tbl tbody tr:nth-child(even){background:var(--zebra)}
+.tbl tbody tr:hover{background:var(--card-head-bg)}
+
+/* 状态徽章 */
+.badge{display:inline-block; padding:1px 8px; border-radius:999px; font-size:12px;
+       color:#fff; line-height:18px; white-space:nowrap}
+.badge.ok{background:var(--ok)}
+.badge.fail{background:var(--fail)}
+.badge.noop{background:var(--noop)}
+.badge.warn{background:var(--warn)}
+
+/* 行内代码 / 路径 */
+code{font-family:Consolas,Monaco,monospace; font-size:12.5px;
+     background:var(--code-bg); padding:1px 5px; border-radius:3px}
+ul{margin:6px 0; padding-left:20px}
+
+/* 页脚 */
+.foot{color:var(--faint); font-size:12px; text-align:center; margin:20px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1 class="page-title">claude-md-map 维护报告</h1>
+  <p class="page-sub"><!-- 工程名 · YYYY-MM-DD HH:MM · claude-md-map --></p>
+
+  <!-- MODE: claude-md -->
+  <section class="card">
+    <h2>CLAUDE.md 更新 <span class="badge ok">成功</span></h2>
+    <div class="card-body">
+      <!-- 判向结果 / 受影响与更新模块数 / lint 与语义评审结论 / install 文件清单（或 NOOP、挂起原因） -->
+      <p><!-- 一句话结论 --></p>
+      <table class="tbl">
+        <thead><tr><th>模块</th><th>状态</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><!-- 模块名 --></td><td><!-- 说明 --></td><td><!-- 说明 --></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <!-- /MODE -->
+
+  <!-- MODE: filter -->
+  <section class="card">
+    <h2>文件过滤 <span class="badge warn">待复核</span></h2>
+    <div class="card-body">
+      <!-- 是否变更 / 决策表摘要 / 改动文件 / token 节省估算 / 待复核项 -->
+    </div>
+  </section>
+  <!-- /MODE -->
+
+  <!-- MODE: doc-audit -->
+  <section class="card">
+    <h2>文档审核 <span class="badge ok">成功</span></h2>
+    <div class="card-body">
+      <!-- 汇总表(文件|类型|严重/建议/提示数|整改状态) + 逐文件整改明细 + 待人工确认清单 -->
+      <table class="tbl">
+        <thead><tr><th>文件</th><th>类型</th><th>严重</th><th>建议</th><th>提示</th><th>整改状态</th></tr></thead>
+        <tbody>
+          <tr><td><code><!-- path --></code></td><td><!-- 类型 --></td><td><!-- n --></td><td><!-- n --></td><td><!-- n --></td><td><!-- 状态 --></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <!-- /MODE -->
+
+  <!-- MODE: memory -->
+  <section class="card">
+    <h2>记忆更新 <span class="badge noop">无变更</span></h2>
+    <div class="card-body">
+      <!-- 变更清单表(操作|条目|原因) + 校准结论 -->
+      <table class="tbl">
+        <thead><tr><th>操作</th><th>条目</th><th>原因</th></tr></thead>
+        <tbody>
+          <tr><td><!-- 新增/更新/删除 --></td><td><!-- 条目 --></td><td><!-- 原因 --></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <!-- /MODE -->
+
+  <p class="foot"><!-- YYYY-MM-DD HH:MM · 工程名 · claude-md-map --></p>
+
+</div>
+</body>
+</html>

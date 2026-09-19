@@ -1,0 +1,54 @@
+# ============================================================
+# cvte-jira-create-task 配置 —— AERDM 项目 · 任务(Task) 类型
+# 用途：AI 根据用户任务描述装配 Jira 字段，再调用 scripts/create_issue.py 建任务。
+# 字段格式为 Jira REST API v2 规范（已在 jira.cvte.com 9.12.1 实测通过）。
+# 本项目默认：project=AERDM, issue_type=任务, 经办人/责任人=luziyu, 若符合直接采用，无需询问。
+# ============================================================
+
+project: AERDM
+issue_type: 任务
+
+# ----- 默认值（source=fixed 语义）-----
+# 这些字段默认直接采用，除非调用方用 --assignee 等覆盖。
+defaults:
+  assignee: {name: luziyu}                # 经办人 (user 对象；AERDM 任务允许留空但通常必填)
+  customfield_10447: [{name: luziyu}]     # 责任人 (array<user>，必填)
+  customfield_14804: {name: wuhaoheng}    # 审核人 (单用户对象)
+  customfield_10310: {value: EVT}         # 所处阶段 (option，必填)
+  customfield_21424: {value: SW}          # 专业领域 (option)
+  customfield_17402: {value: 平台}        # 适用范围 (option)
+  priority: {name: 中}                    # 优先级 (option)
+  customfield_11110: {value: D}           # 难易程度 (option，可被 AI 推断覆盖)
+
+# ----- 日期字段（jira.cvte.com 强制格式）-----
+# customfield_13209 开始时间 (datetime)：必须带毫秒 .000 与时区偏移 +0800，否则报 "Error parsing time"
+#   → 默认取当天 default_start_time（09:00:00）；用户提供日期/时间则以提供的为准。
+#   → 最终按 start_time_format 拼装：YYYY-MM-DDTHH:MM:SS.000+0800（%H 时间可被覆盖）
+# duedate 到期日 (date)：YYYY-MM-DD，默认 = 开始日期 + 1 天
+date_defaults:
+  start_time_format: "%Y-%m-%dT%H:%M:%S.000+0800"
+  default_start_time: "09:00:00"
+  due_offset_days: 1
+  due_format: "%Y-%m-%d"
+
+# ----- AI 推断字段（source=ai 语义）-----
+# AI 依据用户任务描述推断；信息不足时用 AskUserQuestion 一次性补齐。
+ai_infer:
+  summary: |
+    从用户任务描述提炼【项目/车型代号】作为 Jira summary，统一采用 `[代号]描述` 格式：
+    - 仅当描述最开头是「代号_」形式时，把代号提到最前并套方括号，去掉紧随其后的下划线。
+      例：WB101_通讯协议添加_PDC版本上报协议_0x0A03_0x8A0C → [WB101]通讯协议添加_PDC版本上报协议_0x0A03_0x8A0C
+    - 代号在标题中间或重复出现、以及内部下划线，均保留原样（只标注开头的代号）。
+    - 去除换行与句号，控制在 60 字以内。
+    - 用户的描述会比较口语化，语句需进行适当优化。
+  description: |
+    用户任务描述的正文作为 Jira description，保留换行与原始中文，不做删减。
+  customfield_11110: |
+    默认D
+
+# ----- 枚举（校验用）-----
+enums:
+  所处阶段: [EVT, DVT, PVT, MP, 测试阶段, 送样]
+  专业领域: [SW, HW, ME, NPI, IP, PUR, SA, SM, DQA, TE, PM, SQA, PQL, F&A, SYS, PdM]
+  难易程度: [S, A, B, C, D, E, NA, EMPTY]
+  适用范围: [平台, 延伸]
