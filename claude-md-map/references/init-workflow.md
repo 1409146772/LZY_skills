@@ -11,7 +11,7 @@ mdmap detect --repo <工程根> --ensure-workspace
 ```
 
 - 返回 `MODE = INIT` → 走本流程;`ADOPT` → 同样走本流程,但 P2 的 brief 生成用 `--mode adopt`(worker 做合并式重排,禁覆盖手写内容);`UPDATE/NOOP` → 不属于初始化,见 update-workflow.md。
-- 退出码 4 = 不是代码工程(home、<5 个源码文件)→ 与用户确认目录,不要自作主张换目录。
+- 退出码 4 = 不是代码工程(home、<5 个源码文件)→ **AUTO:不弹框**——停止,会话内原样输出脚本的 exit-4 报错 + 一行「请指定工程根目录」;**不得自行换目录**,不得 `--force` 硬闯,不发邮件(本轮未进入任何模式,无报告章节可附)。MANUAL:AskUserQuestion 确认目录。
 - 工作区为 `<repo>/.claude-md-map/`:`state.json`(默认随仓提交,团队共享基线;`--state-local` 可关)+ `tmp/`(自带 .gitignore,git 忽略)。
 
 ## P1 扫描 + 划分(主会话)
@@ -28,8 +28,13 @@ mdmap plan  --scan tmp/scan.json       # → tmp/modules.json,打印划分表
   3. >400 文件或 >15k LOC → 按二级子目录(≥3 文件,`--split-child-files` 可调)再切,最多 8 个孩子,余量留在父级 `-core`(嵌套前缀由最长前缀匹配消解)
   4. 总数收敛 4-12;超出自动提高门槛重聚,仍超出 → plan 退出码 4(low_confidence)
   5. 90 天 git churn Top5 的模块在根地图排前,优先挖 Gotchas
-- **plan 退出码 4 或划分明显不合理时**:用 AskUserQuestion 让用户确认/调整(可给 `--min-files`/`--max-modules` 重跑);划分合理则打印表格直接继续,不要额外打断。
-- 向用户复述划分表(一行一模块:id / 前缀 / 文件数 / churn),这是用户了解"谁负责写哪块"的唯一窗口。
+- **plan 退出码 4 或划分明显不合理时**:
+  - **MANUAL** → 用 AskUserQuestion 让用户确认/调整(可给 `--min-files`/`--max-modules` 重跑)。
+  - **AUTO** → 不弹框,走确定性回退(`plan` 即使返回 4 也已把 modules.json 落盘,仍读得到划分):
+    ① 模块数 = 1 且 `single_root_only=true` → 直接继续(跳过 P3 根合成),报告记一条 warning;
+    ② 模块数 = 0 → 把 `--min-files` 减半自动重跑 plan **一次**,仍为 0 → 本模式停止并报告「无法自动划分」;
+    ③ 其余情形 → 照常继续,报告记 warning。**不做无界重试,不改 `--max-modules`。**
+- 向用户复述划分表(一行一模块:id / 前缀 / 文件数 / churn),这是用户了解"谁负责写哪块"的唯一窗口。划分合理则**打印表格直接继续,不要额外打断**;AUTO 下表格只进会话/报告,不阻塞等待。
 
 ## P2 模块 worker(并行派发)
 
@@ -92,8 +97,9 @@ mdmap lint  ... > 记 stdout
 mdmap report --repo <工程根> --draft-dir tmp/draft --modules tmp/modules.json --lint tmp/lint.json
 ```
 
-- 向用户展示 report 输出(根文件全文 + 模块大纲/行数/预览),等确认。**用户不确认就不落盘。**
-- 确认后:
+- 向用户展示 report 输出(根文件全文 + 模块大纲/行数/预览)。**MANUAL:等确认,用户不确认就不落盘。AUTO:不等确认**——展示 + 写统一报告后直接执行下面的 `install`,并输出门控声明行「AUTO 跳过落盘确认,自动 install <n> 个文件(既有文件备份至 tmp/backup-<ts>/)」。
+  **R7 在 AUTO 下同样生效**:备份由 `install` 自身完成(建 `tmp/backup-<ts>/` 后逐文件 copy2),AUTO 不提供"不落盘"分支,但落盘永远可回滚。
+- MANUAL 确认后(或 AUTO 直接):
 
   ```
   mdmap install --repo <工程根> --draft-dir tmp/draft --modules tmp/modules.json --mode init

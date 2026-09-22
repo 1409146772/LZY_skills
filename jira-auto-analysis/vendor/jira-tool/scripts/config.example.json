@@ -1,0 +1,5 @@
+{
+  "server": "https://jira.cvte.com",
+  "email": "you@example.com",
+  "token": "<YOUR_JIRA_PAT>"
+}

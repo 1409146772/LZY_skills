@@ -54,7 +54,9 @@ brief 自动附:现有 CLAUDE.md 路径、变更文件清单(≤80 条)、更新
 边界处理:
 - `missing_md=true`(state 引用的文档被手删)→ 该模块 brief 用 `--mode adopt` 重新生成(退化为单独重建)。
 - `new_dirs` ≥15 源文件 → 新模块:走 plan 增量(或手动在 modules.json 加条目)后按 init 流程给该目录派 worker;`small_new_dirs` → 并入父模块(列进父模块 worker 的 brief)。
-- `deleted` 模块 → **先问用户**,确认后删除其 CLAUDE.md 与根地图行,并从 state.modules 移除(用 Edit 改 state.json)。
+- `deleted` 模块 →
+  - **MANUAL**:先问用户,确认后删除其 CLAUDE.md 与根地图行,并从 state.modules 移除(用 Edit 改 state.json)。
+  - **AUTO**:**不询问,而且绝不 `rm`**。只做两件可回滚的记账——清掉 `state.modules` 条目 + 移除根 CLAUDE.md 的对应地图行;两处改动都必须走「草稿 → `install --mode update`」路径,使落盘前的根 CLAUDE.md 被 R7 备份进 `tmp/backup-<ts>/`。若该模块的 CLAUDE.md 在磁盘上仍存在(目录没删干净)→ AUTO 下**保留文件**并在报告「待人工确认」列出。报告记一条「已自动清理 N 个已删除模块的地图行/基线条目(原文件已备份)」。
 - `root_dirty` → 单独派一个小 worker 只做根文件同步(地图行/Gotchas/Commands 受影响处,目标改动 ≤10 行;单模块 single_root_only 时跳过)。
 
 ### U2 质量门
@@ -69,9 +71,12 @@ mdmap lint --repo <工程根> --modules tmp/modules.json     # 不带 --draft-di
 
 抓:死路径(文件/目录被搬走或改名)、超预算、空章节、地图行失配、跨文件重复行。这是文档腐烂的廉价探测器——lint 只能抓死路径,抓不住语义失真,所以建议用户每 3-6 个月或大版本后跑一次 `--full` 全量复核(即对全部模块重跑 init 流程的 P2-P4,ADOPT 模式合并)。
 
-### U4 确认 + 落盘
+### U4 报告 + 落盘
 
 本轮结果(受影响模块数、worker 结论、lint 结论、install 清单或挂起原因)同时作为 claude-md 章节写入统一报告文件(路径规则见 SKILL.md「统一报告文件」;NOOP 也落一句话结论)。
+
+**MANUAL:向用户展示 report 输出,等确认,用户不确认就不落盘。AUTO:不等确认**——展示 + 写统一报告后直接执行下面的 `install`,并输出门控声明行「AUTO 跳过落盘确认,自动 install <n> 个文件(既有文件备份至 tmp/backup-<ts>/)」。
+**R7 在 AUTO 下同样生效**:备份由 `install` 自身完成,落盘永远可回滚。
 
 ```
 mdmap report --repo <工程根> --draft-dir tmp/draft --modules tmp/modules.json --lint tmp/lint.json

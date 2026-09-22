@@ -1,0 +1,28 @@
+# jira-log-analysis 依赖（钉住主版本，可重建 .venv）
+#
+# 重建方式（在工具目录内执行；TOOL 就是本目录）：
+#   uv venv --python 3.12 .venv
+#   uv pip install --python .venv/Scripts/python.exe -r requirements.txt
+#
+# 注意：PyPI 包名是 jira（不是 python-jira）。
+#
+# ⚠ DLP 坑（实测）：
+#   公司 DLP 会把 venv 里 packaging/ 与 charset_normalizer/ 的 *.py 改名成 *.py.IPGSD，
+#   包会退化成命名空间包，报 "No module named 'packaging.version'"。
+#   修复（合法途径：从 wheel 重建，绕开被污染的 uv 缓存）：
+#     uv pip install --python .venv/Scripts/python.exe --no-cache --reinstall packaging charset-normalizer
+#   不要手工把 .IPGSD 改回 .py —— 那是绕过 DLP 管控。
+#
+# 注：内嵌的 vendor/ 工具（frame_extractor / canlog_tool）里，
+#     frame_extractor 是纯标准库，无需额外依赖。文档由用户提供现成的 md，
+#     不做 xlsx/docx/pdf 降维，所以不需要 openpyxl / python-docx / pillow。
+
+# Jira 访问（vendor/jira-tool 的 ops 脚本 import 这个库）
+jira>=3.10,<4
+
+# 通用 HTTP 请求
+requests>=2.31
+
+# CAN 日志解析（vendor/canlog：BLF + DBC）
+cantools>=42.0
+python-can>=4.6

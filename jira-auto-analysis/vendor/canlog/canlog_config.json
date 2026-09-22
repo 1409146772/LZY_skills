@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "default_dbc": [],
+  "output_root": "output",
+  "options": {
+    "enum_mode": "label",
+    "include_raw_columns": false,
+    "include_direction": false,
+    "unknown_id_report": true,
+    "dump_unknown": false,
+    "allow_truncated": true,
+    "prefer_messages": [],
+    "csv_float_decimals": null
+  },
+  "history": [
+    {
+      "time": "2026-09-22 00:09:07",
+      "blf": "D:\\LZY_project\\AI\\tool\\jira-log-analysis\\workspace\\out\\_selftest\\LH-FAKE-0001\\attachments\\WB101_WithouWarning2026_08_18_17_44_38.blf",
+      "dbc": [
+        "D:\\projects\\weiqiao\\WB101\\WB101_IHU_CAN矩阵_V2.4_20260722-&&-WB102_IHU_CAN矩阵_V2.4_20260911.dbc"
+      ],
+      "bundle": "D:\\LZY_project\\AI\\tool\\jira-log-analysis\\workspace\\out\\_selftest\\LH-FAKE-0001\\evidence\\canlog_WB101_WithouWarning2026_08_18_17_44_38\\WB101_WithouWarning2026_08_18_17_44_38_20260922_000907"
+    }
+  ]
+}

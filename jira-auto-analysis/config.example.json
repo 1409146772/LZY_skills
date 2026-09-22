@@ -1,0 +1,29 @@
+{
+  "jira": {
+    "jql": "assignee = currentUser() AND statusCategory != Done ORDER BY priority desc, updated desc",
+    "max_tickets": 5
+  },
+  "email": {
+    "to": "you@example.com",
+    "cc": ""
+  },
+  "projects": [
+    {
+      "name": "<工程名，如 S32K312 车载仪表主控平台>",
+      "desc": "<一段话描述这个工程涵盖什么，供 orchestrator 判断工单归属>",
+      "analysis_scope": "<找代码时缩小到的子目录名，留空表示整个仓库>"
+    }
+  ],
+  "_inputs_note": "代码 / DBC / 文档三个路径不在这里配 —— 见 inputs.json.example。",
+  "_paths_note": "以下路径一律相对工具根目录（换成绝对路径也支持）。整个工具可以 zip 走、解压到任意位置、换盘符都不必改配置。",
+  "paths": {
+    "workspace_root": "workspace",
+    "jira_ops": "vendor/jira-tool/scripts/ops",
+    "frame_extractor": "vendor/frame_extractor/frame_extractor.py",
+    "canlog_dir": "vendor/canlog",
+    "lark_cli": "vendor/lark-cli/lark-cli.exe",
+    "venv_py": "",
+    "uv": "uv",
+    "base_python": ""
+  }
+}

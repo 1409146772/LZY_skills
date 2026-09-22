@@ -1,15 +1,84 @@
 ---
 name: claude-md-map
-description: "Layered CLAUDE.md management and codebase navigation map for a whole repository, plus file-filter config refresh, Markdown doc audit & auto-fix, and Claude memory maintenance. Workflow: interactive entry (menu or natural language) → dispatch into one of 5 modes. claude-md: detect mode (INIT/ADOPT/UPDATE/NOOP) → scan directory stats → cluster into 4-20 prefix modules (超大目录按二级子目录自动拆分成独立子模块) → dispatch parallel subagents to write per-module CLAUDE.md drafts into a git-ignored workspace → synthesize root map file → lint + semantic review gate → show confirmation report → install with backup and state.json baseline. filter: refresh/calibrate the current project's .claudeignore + .claude/settings.json per the 文件过滤 methodology doc. doc-audit: full re-audit of doc\\**\\*.md (incl. README) against the Markdown doc spec, fix issues in place, write review report. memory: consolidate the current project's auto-memory. all: run the four modes in sequence. Every maintenance run ends with an email notification of the per-mode results (收件人/抄送取 config.conf 的 notify_email/notify_cc,已授权直发). Use when the user asks to 初始化 CLAUDE.md / 分层管理 CLAUDE.md / 生成代码库地图 / 项目文档初始化 / 更新 CLAUDE.md / 代码更新后同步文档 / 刷新文件过滤 / 更新 .claudeignore / 文件过滤配置 / 审核文档 / 文档整改 / doc 规范审核 / 更新记忆 / 整理记忆 / 全部维护 / codebase map / layered CLAUDE.md / module docs / CLAUDE.md maintenance for a repo. DO NOT use for: single-file Q&A, editing one CLAUDE.md section by hand (edit directly), or non-repo directories."
+description: "Layered CLAUDE.md management and codebase navigation map for a whole repository, plus file-filter config refresh, Markdown doc audit & auto-fix, and Claude memory maintenance. Workflow: auto-dispatch by default (explicit argument → natural-language keyword → repo state via mdmap detect) into one of 5 modes, running unattended with no confirmation prompts and auto-installing; only when the user explicitly asks to choose manually does it open the interactive menu. claude-md: detect mode (INIT/ADOPT/UPDATE/NOOP) → scan directory stats → cluster into 4-20 prefix modules (超大目录按二级子目录自动拆分成独立子模块) → dispatch parallel subagents to write per-module CLAUDE.md drafts into a git-ignored workspace → synthesize root map file → lint + semantic review gate → show report (auto-install when unattended) → install with backup and state.json baseline. filter: refresh/calibrate the current project's .claudeignore + .claude/settings.json per the 文件过滤 methodology doc. doc-audit: full re-audit of doc\\**\\*.md (incl. README) against the Markdown doc spec, fix issues in place, write review report. memory: consolidate the current project's auto-memory. all: run the four modes in sequence. Every maintenance run ends with an email notification of the per-mode results (收件人/抄送取 config.conf 的 notify_email/notify_cc,已授权直发). Use when the user asks to 初始化 CLAUDE.md / 分层管理 CLAUDE.md / 生成代码库地图 / 项目文档初始化 / 更新 CLAUDE.md / 代码更新后同步文档 / 刷新文件过滤 / 更新 .claudeignore / 文件过滤配置 / 审核文档 / 文档整改 / doc 规范审核 / 更新记忆 / 整理记忆 / 全部维护 / codebase map / layered CLAUDE.md / module docs / CLAUDE.md maintenance for a repo. DO NOT use for: single-file Q&A, editing one CLAUDE.md section by hand (edit directly), or non-repo directories."
 tools: Read, Glob, Grep, Bash, Edit, Write, AskUserQuestion
-argument-hint: claude-md|filter|doc-audit|memory|all
+argument-hint: "[claude-md|filter|doc-audit|memory|all] [manual]"
 ---
 
 # claude-md-map — 工程维护四合一(CLAUDE.md 分层文档 / 文件过滤 / 文档审核 / 记忆)
 
 ## 交互入口
 
-`$0` 为空或无法匹配时,用 AskUserQuestion 让用户选择:
+本 skill **默认无人值守执行(AUTO)**,不必等用户选择模式。只有用户显式要求手动选择时才进入人工菜单(MANUAL)。
+D0 判定的结果写进 `tmp/ledger.md` 首行,**本轮全程不再改变**。
+
+### D0 判定交互模式
+
+命中下列任一措辞 → **MANUAL**;否则 **AUTO**:
+
+- 中文:「手动选择」「手动选」「手动模式」「让我自己选」「我自己选」「弹菜单」「出菜单」「给我选项」「先问我」「先问我要跑哪个」「不要自动执行」「别自动跑」
+- 英文:`manual` / `manual mode` / `let me choose` / `I'll pick` / `show me the menu` / `show menu` / `give me options` / `ask me first` / `don't auto-run` / `interactive`
+- 参数:裸 token `manual` 或 `手动`(不加 `--manual` 旗标,保持 argument-hint 诚实、无需解析器)
+
+**显式模式参数不是 MANUAL**:`$0` = `claude-md|filter|doc-audit|memory|all` 是确定性指令,仍走 AUTO 门控(即自动落盘)。
+
+### 模式声明行(每次进入必输出,一行,不阻塞)
+
+```
+[claude-md-map] 模式=<AUTO|MANUAL> | 目标=<工程根> | 判定=<INIT|ADOPT|UPDATE|NOOP|显式指定> | 执行=<模式名|待选> | 依据=<一句话>
+```
+
+```
+[claude-md-map] 模式=AUTO | 目标=D:/proj/CDC_7255 | 判定=UPDATE | 执行=claude-md | 依据=无参数无关键词,detect 报 3 个模块受影响
+[claude-md-map] 模式=MANUAL | 目标=D:/proj/CDC_7255 | 判定=显式指定 | 执行=待选 | 依据=用户说「让我自己选」
+[claude-md-map] 模式=AUTO | 目标=D:/proj/CDC_7255 | 判定=NOOP | 执行=停止 | 依据=自上次审计以来无影响文档的变更
+```
+
+门控被跳过时补一行:`[claude-md-map] 门控=AUTO 跳过落盘确认,自动 install 5 个文件(既有文件备份至 tmp/backup-<ts>/)`
+
+### 工程根怎么定
+
+① 用户给的显式路径 → ② 否则 cwd 在 git 工作树内 → `git rev-parse --show-toplevel`(只读 Bash)→ ③ 否则 cwd。
+传给 `detect` 后,**以 stdout 的 `repo=<abs>` 为后续每步 `--repo` 的准绳**。
+(必要性:`mdmap.py` 的 `repo_root()` 只 resolve 显式值/cwd,**不向父目录找仓库根**,在子目录里跑会静默把子目录当工程根。)
+
+**守卫(skill 自身/其宿主仓不可作为目标)**:解析结果落在 `<本skill目录>` **或其任一祖先目录**时 → 停止并提示「<路径> 是 skill 自身所在仓库,请指定目标工程」,**不得自动 fallback 到别的目录或换模式**。
+(本副本住在 `D:/LZY_project/AI/skills/claude-md-map`,而 `git rev-parse --show-toplevel` 会解析到**宿主的 skills 仓**,所以只挡住"等于 skill 目录"是不够的——从 skill 目录裸跑会把整个 skills 集合当成目标工程测绘。
+判定用真实路径比较,注意 Windows 大小写与 `\` / `/` 差异;MANUAL 下同样先过守卫。)
+
+### D1 模式解析顺序(AUTO,首个命中即停)
+
+1. `$0` 命中模式名(`claude-md|filter|doc-audit|memory|all`)→ 该模式
+2. **自然语言直入(免菜单)**:用户说下列明确措辞 → 直接进入对应模式:
+   - 「初始化/同步/更新 CLAUDE.md」「代码库地图」→ claude-md(走下文「流程总控」,先 `mdmap detect` 判向)
+   - 「刷新文件过滤」「更新 .claudeignore」「文件过滤配置」→ filter → 读 `references/file-filter-workflow.md`
+   - 「审核文档」「文档整改」「doc 规范审核」→ doc-audit → 读 `references/doc-audit-workflow.md`
+   - 「更新记忆」「整理记忆」→ memory → 读 `references/memory-update-workflow.md`
+   - 「全部维护」「四个都跑」「一键维护」→ all
+3. 都未命中 → 跑 `mdmap detect --repo <工程根> --ensure-workspace`,按判向落表:
+
+| detect 结果 | AUTO 动作 |
+|---|---|
+| `INIT` | claude-md(init-workflow P0-P5) |
+| `ADOPT` | claude-md(brief 用 `--mode adopt`) |
+| `UPDATE` | claude-md(update-workflow U0-U4) |
+| `NOOP` | **报告并停止**,零改动 |
+| 退出码 4 | **停止并报告**(真实阻塞,见失败处理表) |
+
+未识别的非空 `$0` 不是错误:落到第 3 步,并在声明行「依据」里回显那个被忽略的 token。
+
+**为什么 NOOP 是「报告并停止」而非升级为 `all`**:
+
+1. **detect 只懂一个维度**。NOOP 完全由 CLAUDE.md 基线算出(变更模块/新目录/已删/根脏),它是**关于 claude-md 的否定证据**,对 filter / doc-audit / memory 零信息量。据此升级 = 从一个不提及它们的信号里推断三个模式。
+2. **会退化成「永远 all」**。仓库一旦有了 `state.json` 且工作区干净,几乎每次调用都返回 NOOP;`NOOP→all` 对成熟仓库**就是**「永远 all」。
+3. **NOOP 下不写任何东西**(`detect --ensure-workspace` 在 NOOP 时不建工作区)。报告并停止是唯一能让裸调用保持无副作用的解。
+
+NOOP 输出 = 声明行 + 一行非阻塞提示「如需其他模式,回复 filter / doc-audit / memory / 全部维护」。无 AskUserQuestion、无 worker、无 install。
+仍按下文「统一报告文件」写 NOOP 章节并触发邮件(既有「每轮必发」规则不变)。
+
+### MANUAL:人工菜单
+
+用 AskUserQuestion 让用户选择:
 
 | 选项 | 模式 | 说明 |
 |------|------|------|
@@ -19,25 +88,41 @@ argument-hint: claude-md|filter|doc-audit|memory|all
 | 记忆更新 | memory | 当前工程 auto-memory 整理 |
 | 全部执行 | all | 依次执行前四个模式 |
 
-**自然语言直入(免菜单)**:用户说下列明确措辞 → 直接进入对应模式,不弹子命令选择框:
-- 「初始化/同步/更新 CLAUDE.md」「代码库地图」→ claude-md(走下文「流程总控」,先 `mdmap detect` 判向)
-- 「刷新文件过滤」「更新 .claudeignore」「文件过滤配置」→ filter → 读 `references/file-filter-workflow.md`
-- 「审核文档」「文档整改」「doc 规范审核」→ doc-audit → 读 `references/doc-audit-workflow.md`
-- 「更新记忆」「整理记忆」→ memory → 读 `references/memory-update-workflow.md`
-- 「全部维护」「四个都跑」「一键维护」→ all
-
-**all 模式**:按菜单序依次执行 claude-md → filter → doc-audit → memory;单模式失败不阻塞后续,结束输出各模式状态汇总;claude-md 保留其自身落盘确认门(NOOP 时零打扰),其余三模式按各自无人值守规则执行。每轮结束触发「运行结果邮件通知」(见下节)。
-
-**实现约束(AskUserQuestion 限制)**:AskUserQuestion 每个问题最多 4 个选项。菜单虽有 5 项,弹出交互时须**拆两问**:
+**实现约束(AskUserQuestion 每个问题最多 4 个选项)**:菜单虽有 5 项,弹出时须**拆两问**:
 - 第 1 问「范围」:全部执行 / 单个模式
 - 选「单个模式」后第 2 问:CLAUDE.md 更新 / 文件过滤刷新 / 文档审核整改 / 记忆更新
 - 不得一次传 5 项(工具报 too_big);单独「记忆更新」可在第 2 问直接选。
 
-**交互强制规则**:
+### all 模式
+
+按菜单序依次执行 claude-md → filter → doc-audit → memory;单模式失败不阻塞后续,结束输出各模式状态汇总。每轮结束触发「运行结果邮件通知」(见下节)。
+
+- claude-md 的落盘确认门**按本轮模式**:MANUAL 保留,AUTO 跳过(auto-install);其余三模式本就无人值守。
+- **all 内部的 claude-md 子步骤不适用 D1 的「NOOP → 报告并停止」**;NOOP 仅表示该子步骤零打扰,不阻断其余三模式。
+- **AUTO 下 all 是影响面最大的一条路径:声明行必须逐个列出将执行的四个模式后再开始。**
+
+### 门控规则(按本轮模式)
+
+| 门控 | MANUAL | AUTO |
+|---|---|---|
+| plan 退出码 4(低置信划分) | 展示划分表问用户 | 不弹框,走确定性回退(`references/init-workflow.md` P1) |
+| P5 / U4 落盘前确认 | 展示 report 等确认,**不确认不落盘** | 不等确认,展示 + 写报告后直接 `install` |
+| UPDATE 的 `deleted` 模块 | 先问用户再删 | 不询问、**绝不 `rm`**,只清地图行与基线条目(R7 备份) |
+| detect 退出码 4(非代码工程) | AskUserQuestion 确认目录 | 停止并报告,不询问 |
+
+### 交互强制规则(按模式分列)
+
+**AUTO**:
+- **不得**弹 AskUserQuestion 做模式选择或落盘确认;必须按 D1 执行。
+- 遇真实阻塞(detect 退出码 4)只报告不询问,不自行换目录、不用 `--force` 硬闯。
+- **不得因「没拿到确认」而停下不落盘**;落盘后输出门控声明行(含备份路径)。
+
+**MANUAL**:
 - 必须弹出真实 AskUserQuestion 交互,不得根据上下文「猜测」或「默认代选」。
 - 不得复用上一轮会话中的选择结果;每次进入都要重新询问。
-- 若用户取消交互(cancel/close),立即停止执行,不得继续执行任何子命令。
-- 只有收到本轮明确选择后,才允许进入 claude-md/filter/doc-audit/memory/all(自然语言明确措辞 = 等效已确认)。
+- 若用户取消交互(cancel/close),立即停止执行,不得继续执行任何子命令、不发邮件。
+
+**两模式共同**:派发任何子命令前先输出模式声明行。
 
 ## 统一报告文件(每模式必落)
 
@@ -70,7 +155,7 @@ argument-hint: claude-md|filter|doc-audit|memory|all
 | `reviewer` | doc-audit:设计类文档版本历史表「审查人」列 | 写「待审查」 |
 | `maintainer` | doc-audit:其他文档三行版本信息的「维护者」行 | 整行省略,记入报告「待人工确认」清单 |
 
-署名缺省为**静态判定,不弹交互**——保证 `all` 无人值守模式不中断。细则见 `references/doc-audit-workflow.md` 整改执行第 5 条。
+署名缺省为**静态判定,不弹交互**——保证 AUTO / `all` 无人值守不中断。细则见 `references/doc-audit-workflow.md` 整改执行第 5 条。
 
 ## 运行结果邮件通知(每轮必发)
 
@@ -160,12 +245,12 @@ mdmap detect --repo <工程根> --ensure-workspace     # → INIT | ADOPT | UPDA
 ```
 
 **INIT**(无根 CLAUDE.md)→ init-workflow.md P0-P5:
-P0 detect+工作区 → P1 scan+plan(划分表给用户过目;plan 退出码 4 = 低置信,AskUserQuestion 确认)→ P2 并行模块 worker(general-purpose,显式 model,brief 由脚本生成,≤8 个并发)→ P3 单个根合成 worker(只读模块草稿,不读源码)→ P4 lint + Explore 评审(双质量门)→ P5 report → **用户确认** → install。
+P0 detect+工作区 → P1 scan+plan(划分表进会话与报告;plan 退出码 4 的门控见「交互入口」)→ P2 并行模块 worker(general-purpose,显式 model,brief 由脚本生成,≤8 个并发)→ P3 单个根合成 worker(只读模块草稿,不读源码)→ P4 lint + Explore 评审(双质量门)→ P5 report →(MANUAL:用户确认 / AUTO:直接)→ install。
 
 **ADOPT**(有根 CLAUDE.md 无 state.json)→ 同 INIT,brief 用 `--mode adopt`:现有内容是 merge 基准,只重排补齐,禁删手写内容。
 
 **UPDATE**(有 state.json 且有变更)→ update-workflow.md U0-U4:
-detect-changes → 只对受影响模块派 update worker(手改冲突=盘上为准就地合并;新目录 ≥15 文件建新模块;deleted 先问用户)→ 全量 lint(腐烂探测)→ report → 确认 → install --mode update。
+detect-changes → 只对受影响模块派 update worker(手改冲突=盘上为准就地合并;新目录 ≥15 文件建新模块;deleted 按模式处理:AUTO 只清地图行+基线不删文件 / MANUAL 先问用户)→ 全量 lint(腐烂探测)→ report →(MANUAL:确认 / AUTO:直接)→ install --mode update。
 
 **NOOP** → 告知"文档已是最新",结束。
 
@@ -177,8 +262,8 @@ detect-changes → 只对受影响模块派 update worker(手改冲突=盘上为
 
 | 场景 | 处置 |
 |---|---|
-| detect 退出码 4(home/<5 源文件) | AskUserQuestion 确认目录;不自行换目录 |
-| plan 退出码 4(低置信) | 展示划分表问用户;按反馈调 --min-files/--max-modules 重跑 |
+| detect 退出码 4(home/<5 源文件) | 真实阻塞:**AUTO 停止 + 一行说明**;MANUAL 用 AskUserQuestion 确认目录;两者都不自行换目录、不发邮件 |
+| plan 退出码 4(低置信) | **AUTO 不弹框**:单模块继续(记 warning)/ 0 模块自动降 --min-files 重跑一次,仍 0 则停止报告;MANUAL 展示划分表问用户,按反馈调 --min-files/--max-modules 重跑 |
 | worker BLOCKED 两次 | 标记「待补」`<!-- TODO -->` 占位 + 地图行标注,不阻塞其余模块;最终报告告知 |
 | reviewed_commit 失效 / 非 git | 脚本自动降级 content_hash 比对(模块级粒度);照常走流程 |
 | state 引用的 CLAUDE.md 被手删 | 该模块 brief 退化为 adopt 模式重建 |
@@ -196,5 +281,5 @@ detect-changes → 只对受影响模块派 update worker(手改冲突=盘上为
 | "lint PASS 就不用语义评审了" | lint 抓死路径,抓不住"说错了";两道门抓不同类问题 |
 | "worker 报告太长,贴给我看看" | 贴进来就常驻上下文了;让它写文件,你读路径(R2) |
 | "只更新改动模块,别的肯定没问题" | 没改动的模块也会腐烂;所以每次 update 全量跑 lint |
-| "划分错了下次再改" | 划分错 → 前缀路由错 → 增量更新从根上失效;P1 的低置信必须问 |
+| "划分错了下次再改" | 划分错 → 前缀路由错 → 增量更新从根上失效;AUTO 下低置信走确定性回退并记 warning,MANUAL 下必须问;两种模式都不许静默丢弃划分结果 |
 | "NOOP 也把 worker 跑一遍保险" | 零变更跑 worker 是纯浪费;信 state.json 基线 |

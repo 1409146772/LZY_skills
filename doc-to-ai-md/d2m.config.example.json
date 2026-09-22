@@ -1,0 +1,141 @@
+{
+  "_README": [
+    "d2m 配置模板。复制为 <项目根>/d2m.config.json 后按实际情况修改。",
+    "本文件为 JSON，不支持注释；以 _ 开头的键均为说明性文字，d2m 会忽略其值，但会参与 config_hash 计算。",
+    "改完配置后重跑 `d2m.py update` 即可，正文不受影响，聚合阶段会自动重算。",
+    "最简可用配置只需 project + sources 两项，其余保持默认。"
+  ],
+
+  "project": "项目文档库",
+  "_project": "入口文档标题里用的项目名，例如 'WB101 / WB102 项目文档库'。",
+
+  "output_dir": "ai_docs",
+  "_output_dir": "产物目录，相对项目根。所有 md / 索引 / manifest 都在这里面。",
+
+  "work_dir": ".d2m-work",
+  "_work_dir": "工作目录：状态文件 state.json、中间产物 raw/ 与 norm/ 都在这里。日常不用看。",
+
+  "sources": [
+    {
+      "_说明": "写法一：顶层 PDF / Word，按 glob 收集。声明顺序决定初始编号（第一条 → 01）。",
+      "glob": ["*.pdf", "*.docx", "*.docm"],
+      "exclude": ["_converted", "\\.d2m-work", "ai_docs"],
+      "when_to_use": "这里填一句话，说明这篇文档该在什么场景下查"
+    },
+    {
+      "_说明": "写法一之补充：长 PDF 若前面有版本记录 + 点线目录，单独列一条并设 body_start。",
+      "_重要": "这条必须排在通用 glob 之前 —— expand_sources 按声明顺序去重，先命中的 spec 生效；",
+      "_重要2": "同时要在下面那条通用 glob 的 exclude 里把这篇排除掉，否则它会被收两遍。",
+      "_body_start 怎么定": "grep -n '^1\\.文档信息' <root>/.d2m-work/norm/<NN>_norm.md —— 注意是 norm，不是 raw",
+      "glob": ["某长文档前缀*.pdf"],
+      "outline": { "strategy": "numbered", "body_start": 1269 }
+    },
+    {
+      "_说明": "写法二：结构化 Excel。CAN 矩阵走专用渲染，按报文切节并生成报文速查表。",
+      "glob": ["*CAN矩阵*.xls"],
+      "structured": {
+        "kind": "can_matrix",
+        "sheet": "Matrix",
+        "structured_rules": {
+          "column_header_row": 0,
+          "name_col": 1,
+          "id_col": 3,
+          "node_cols": [27, 38],
+          "speed_cols": { "len": 6, "cycle": 5 },
+          "meta_cols": { "报文类型": 2, "发送类型": 4 }
+        }
+      }
+    },
+    {
+      "_说明": "写法三：多 sheet 诊断表。每个 sheet 一节，自动合并多层表头。",
+      "glob": ["*诊断调查表*.xlsx"],
+      "structured": { "kind": "generic_sheets" },
+      "sheet_titles": {
+        "4_1_DTC Information": "DTC 故障码",
+        "5_1_Read&Write DID": "可读写 DID"
+      }
+    },
+    {
+      "_说明": "写法四：递归收集子目录里的文档。expand_children 把命中的目录展开为其中所有文件。",
+      "_注意": "目录型条目会吞掉整棵子树，务必用 extensions / exclude 收窄，否则源码、缓存都会进来。",
+      "glob": ["子目录名", "另一子目录/**"],
+      "expand_children": true,
+      "extensions": [".docm", ".docx", ".pdf"],
+      "exclude": ["__pycache__", "node_modules", "\\.venv"]
+    }
+  ],
+
+  "_sources 字段速查": {
+    "glob": "相对项目根的 glob 表达式，支持 ** 递归；也可写绝对路径。可传字符串或数组。",
+    "exclude": "正则数组，对相对路径做匹配，命中即排除。注意反斜杠要写成 \\\\。",
+    "extensions": "扩展名白名单（小写，含点）。",
+    "expand_children": "true 时把命中到的目录展开为其下全部文件。",
+    "structured": "结构化渲染。字符串 'can_matrix' / 'generic_sheets'，或对象 {\"kind\":..., ...} 且其余键提升到顶层。",
+    "preserve_docnos": "保留编号不接管，如 [\"06\",\"07\"] 或 \"*\"。用于产物由别的脚本生成的情形。",
+    "outline": "标题注入策略。长 PDF 若前面有点线目录，必须设 body_start 跳过它，否则目录会与正文抢匹配、正文切不出标题。",
+    "when_to_use": "填一句话，会显示在入口文档的「文档清单」表最后一列，告诉 AI 这篇该在什么场景下查。",
+    "title": "覆盖文档显示标题（默认取文件名去扩展名）。",
+    "kind": "强制指定类别 pdf/excel/office/markdown/code，一般不用填，工具会自动识别。"
+  },
+
+  "terms": [
+    { "name": "诊断", "keywords": ["DTC", "UDS", "诊断"] },
+    { "name": "配置字", "keywords": ["F103", "配置字"] }
+  ],
+  "_terms": "倒排索引的术语表。name 是显示名，keywords 是实际匹配的关键词数组。留空则总索引里没有关键词倒排表。",
+
+  "quick_tables": [
+    {
+      "_说明": "从某篇文档的某一节里抽表格行，生成专项速查表。",
+      "doc": "03",
+      "section": "报文速查表",
+      "title": "CAN 报文总览",
+      "columns": ["MessageID", "MessageName", "长度(B)", "CycleTime", "发送节点", "信号数"],
+      "row_prefix": "|",
+      "link_detail": {
+        "label": "详情行号",
+        "pattern": "^### (0x[0-9A-Fa-f]+)"
+      }
+    }
+  ],
+  "_quick_tables": "doc 用两位编号字符串；section 是 md 里的标题文字；link_detail.pattern 用来给每行补一个可跳转的行号列。",
+
+  "chunk": {
+    "target_lines": 350,
+    "_target_lines": "每块目标行数。超长文档按标题边界切成约这么大的块。",
+    "min_doc_lines": 250,
+    "_min_doc_lines": "低于此行的文档不分块，整篇即可。"
+  },
+
+  "index": {
+    "terms_per_doc": 8,
+    "_terms_per_doc": "每篇文档在倒排索引里最多列出多少个相关章节。",
+    "min_hits": 2,
+    "_min_hits": "章节命中次数低于此值不收录（降噪）。",
+    "max_sections": 8
+  },
+
+  "normalize": {
+    "enabled": true,
+    "_enabled": "Unicode 归一化（NFKC + 康熙部首 + PUA 映射）+ 页眉页脚清洗。中文 PDF 建议保持 true。",
+    "footer_patterns": [],
+    "_footer_patterns": "追加的页眉页脚正则，命中即删除。留空则只用内置规则（第 N 页 / N/M / Page N / 纯数字行）。",
+    "join_prose": true,
+    "_join_prose": "把 PDF 里被硬换行截断的散文段落重新合并。"
+  },
+
+  "agentdoc": {
+    "enabled": true,
+    "_enabled": "是否生成 AI 入口说明文件。",
+    "filename": "CLAUDE.md",
+    "_filename": "入口文件名。想生成 Cloud.md 就改成 \"Cloud.md\"。注意：该文件每次都会整体覆盖。",
+    "role": "",
+    "_role": "可选前缀段落，用来补充本项目的特有说明。留空则不插入。",
+    "ignore_paths": [".d2m-work", ".claude-md-map"],
+    "_ignore_paths": "入口文档里标注为「忽略」的路径，同时用于识别本工具自身产物、避免被当成源文档收录。",
+    "routing": [
+      ["某个常见问题的描述", "`ai_docs/md/03_xxx.md` 的某一节"]
+    ],
+    "_routing": "「常见任务 → 去哪查」表的自定义行，每行是 [任务, 去处] 两元素数组。留空则按文档标题自动生成。"
+  }
+}

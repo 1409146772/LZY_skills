@@ -1,0 +1,43 @@
+{
+  "jira": {
+    "jql": "assignee = currentUser() AND statusCategory != Done ORDER BY priority desc, updated desc",
+    "max_tickets": 5
+  },
+
+  "email": {
+    "to": "luziyu@cviauto.com",
+    "cc": ""
+  },
+
+  "projects": [
+    {
+      "name": "S32K312 车载仪表主控平台",
+      "desc": "CVI 车载仪表主控 MCU 工程，NXP S32K312 + FreeRTOS。含 L1 应用层、L2 任务、L3 RTOS、L4 服务、L5 EcuAL、L6 Public 分层，以及 HSE 安全模块。负责仪表显示、CAN/CANFD 通信、UART 与 SOC 交互、电源与待机模式管理、音频/语音链路、诊断与签名。适用车型含 WB101、WB102 等。",
+      "analysis_scope": "FreeRTOS_S32K312",
+      "_analysis_scope_note": "给 subagent 的检索范围提示：找代码时缩小到这个子目录（相对 code 根）。留空表示整个仓库。这只是提示，不是硬约束。"
+    }
+  ],
+
+  "_inputs_note": "代码 / DBC / 文档三个路径**不在这里配** —— 它们在 inputs.json 里，由 Claude 会话在每次调用前按你给的路径写好。见 inputs.json.example。",
+
+  "_projects_note": "projects 只用于让 orchestrator 判断工单归属。工程只有一个时直接用它；多个时按 desc 匹配。",
+
+  "_paths_note": "以下路径一律相对工具根目录（换成绝对路径也支持）。整个工具可以 zip 走、解压到任意位置、换盘符都不必改配置。",
+
+  "paths": {
+    "workspace_root": "workspace",
+    "jira_ops": "vendor/jira-tool/scripts/ops",
+    "frame_extractor": "vendor/frame_extractor/frame_extractor.py",
+    "canlog_dir": "vendor/canlog",
+    "lark_cli": "vendor/lark-cli/lark-cli.exe",
+
+    "_venv_note": "venv_py 通常不用填 —— 默认找 <工具目录>/.venv。只在想把 venv 放到工具外时才填。",
+    "venv_py": "",
+
+    "_uv_note": "uv 只在重建 .venv 时用。留 'uv' 表示走 PATH；也可填绝对路径。",
+    "uv": "uv",
+
+    "_base_python_note": "重建 venv 时用的基础解释器版本或路径。留空默认 3.12。",
+    "base_python": ""
+  }
+}

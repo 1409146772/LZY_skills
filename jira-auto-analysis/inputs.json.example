@@ -1,0 +1,11 @@
+{
+  "code": "D:\\projects\\weiqiao\\WB101\\workspace\\FreeRTOS_S32K312",
+  "dbc": "D:\\projects\\weiqiao\\WB101\\dbc\\WB101_IHU_CAN矩阵_V2.4_20260722.dbc",
+  "docs": "D:\\projects\\weiqiao\\WB101\\doc",
+
+  "keys": ["LH2512024-5408"],
+
+  "code_note": "FreeRTOS_S32K312 车载仪表主控，含分层 CLAUDE.md；正在用的 checkout，只读",
+  "code_project": "S32K312 车载仪表主控平台",
+  "docs_note": "doc/ 下有 CAN 矩阵与诊断调查表"
+}
